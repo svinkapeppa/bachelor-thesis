@@ -208,11 +208,13 @@ def create_batch_data(batch, word_idx, char_idx, tag_idx):
         for word in element:
             max_word_length = max(max_word_length, len(word[0]))
 
-    for element in batch:
+    for i, element in enumerate(batch):
         data['lengths'].append(len(element))
 
         if len(element) < max_sentence_length:
             element += [['<PAD>', '<PAD>']] * (max_sentence_length - len(element))
+
+        batch[i] = [['<PAD>', '<PAD>']] + element + [['<PAD>', '<PAD>']]
 
     for element in batch:
         data_word = []
