@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#This script downloads all data which is needed for successful work.
+#It covers CoNLL datasets and GLoVe embeddings.
+
+STARTDIR=$PWD
+DATADIR="data"
+GLOVEDIR="glove"
+
+mkdir $DATADIR
+mkdir $GLOVEDIR
+
+#Download CoNLL datasets from Lample's Github
+cd $DATADIR
+wget https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.train
+wget https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.testa
+wget https://raw.githubusercontent.com/glample/tagger/master/dataset/eng.testb
+
+mv eng.train train
+mv eng.testa valid
+mv eng.testb test
+
+cd $STARTDIR
+
+#Download GLoVe from Stanford's website
+cd $GLOVEDIR
+wget http://nlp.stanford.edu/data/glove.6B.zip
+unzip glove*.zip

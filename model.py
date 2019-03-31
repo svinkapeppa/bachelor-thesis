@@ -17,18 +17,15 @@ class Model(nn.Module):
 
         self.char_embeddings = nn.Embedding(char_vocab_size, char_embeddings_dim)
 
-        # self.lstm = nn.LSTM(word_embeddings_dim + case_embeddings_dim + char_out_dim,
-        #                     lstm_hidden_dim, bidirectional=True, batch_first=True)
-
-        self.lstm = nn.LSTM(word_embeddings_dim + case_embeddings_dim,
+        self.lstm = nn.LSTM(word_embeddings_dim + case_embeddings_dim + char_out_dim,
                             lstm_hidden_dim, bidirectional=True, batch_first=True)
 
-        self.conv = nn.Conv2d(1, char_out_dim, (3, char_embeddings_dim))
+        self.conv = nn.Conv1d(char_embeddings_dim, char_out_dim, 3, padding=2)
 
         self.hidden = nn.Linear(2 * lstm_hidden_dim, lstm_hidden_dim)
         self.out = nn.Linear(lstm_hidden_dim, tag_set_size)
 
-        self.dropout = nn.Dropout(0.4)
+        self.dropout = nn.Dropout(0.5)
 
         self.elu = nn.ELU()
 
@@ -36,21 +33,19 @@ class Model(nn.Module):
 
     def forward(self, data):
         word_embeddings = self.word_embeddings(data['word'])
-
         case_embeddings = self.case_embeddings(data['case'])
+        char_embeddings = self.char_embeddings(data['char'])
+        char_embeddings = self.dropout(char_embeddings)
+        char_size = char_embeddings.size()
+        char_embeddings = char_embeddings.view(char_size[0] * char_size[1], char_size[2], char_size[3]).transpose(1, 2)
+        char_embeddings, _ = self.conv(char_embeddings).max(dim=2)
+        char_embeddings = torch.tanh(char_embeddings).view(char_size[0], char_size[1], -1)
 
-        # char_embeddings = self.char_embeddings(data['char'])
-        # batch_size, max_sentence_length, max_word_length, char_embeddings_dim = char_embeddings.shape
-        # char_embeddings = char_embeddings.view(-1, 1, max_word_length, char_embeddings_dim)
-        # char_embeddings = self.conv(char_embeddings)
-        # char_embeddings = char_embeddings.view(batch_size, max_sentence_length, self.char_out_dim, -1)
-        # char_embeddings = char_embeddings.max(-1)[0]
-
-        # embeddings = torch.cat((word_embeddings, case_embeddings, char_embeddings), -1)
-        embeddings = torch.cat((word_embeddings, case_embeddings), -1)
+        embeddings = torch.cat((word_embeddings, case_embeddings, char_embeddings), -1)
         embeddings = self.dropout(embeddings)
 
         output, _ = self.lstm(embeddings)
+        output = self.dropout(output)
 
         output = self.hidden(output)
         output = self.elu(output)
