@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 
 def read_sentences(path):
@@ -121,6 +120,8 @@ def create_word_mapping(path):
     idx_word[len(idx_word)] = '<UNK>'
     word_embeddings.append(np.random.uniform(-0.25, 0.25, embedding_size))
 
+    word_embeddings = np.asarray(word_embeddings)
+
     return word_idx, idx_word, word_embeddings
 
 
@@ -192,7 +193,18 @@ def get_casing(word):
     return case_idx[case]
 
 
-def create_batch_data(batch, word_idx, char_idx, tag_idx):
+def get_max_word_length(datasets):
+    max_word_length = 0
+
+    for sentences in datasets:
+        for sentence in sentences:
+            for word in sentence:
+                max_word_length = max(max_word_length, len(word[0]))
+
+    return max_word_length
+
+
+def create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx):
     data = {
         'word': [],
         'char': [],
@@ -202,11 +214,6 @@ def create_batch_data(batch, word_idx, char_idx, tag_idx):
     }
 
     max_sentence_length = len(batch[0])
-
-    max_word_length = 0
-    for element in batch:
-        for word in element:
-            max_word_length = max(max_word_length, len(word[0]))
 
     for i, element in enumerate(batch):
         data['lengths'].append(len(element))
@@ -249,16 +256,16 @@ def create_batch_data(batch, word_idx, char_idx, tag_idx):
         data['case'].append(data_case)
         data['tag'].append(data_tag)
 
-    data['word'] = torch.LongTensor(data['word'])
-    data['char'] = torch.LongTensor(data['char'])
-    data['case'] = torch.LongTensor(data['case'])
+    data['word'] = np.asarray(data['word'])
+    data['char'] = np.asarray(data['char'])
+    data['case'] = np.asarray(data['case'])
     data['lengths'] = np.asarray(data['lengths'])
-    data['tag'] = torch.LongTensor(data['tag'])
+    data['tag'] = np.asarray(np.expand_dims(data['tag'], -1))
 
     return data
 
 
-def create_batches(sentences, batch_size, word_idx, char_idx, tag_idx):
+def create_batches(sentences, batch_size, max_word_length, word_idx, char_idx, tag_idx):
     batches = []
     batch = []
 
@@ -266,14 +273,14 @@ def create_batches(sentences, batch_size, word_idx, char_idx, tag_idx):
 
     for sentence in sentences:
         if len(batch) == batch_size:
-            data = create_batch_data(batch, word_idx, char_idx, tag_idx)
+            data = create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx)
             batches.append(data)
             batch = []
 
         batch.append(sentence)
 
     if len(batch):
-        data = create_batch_data(batch, word_idx, char_idx, tag_idx)
+        data = create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx)
         batches.append(data)
 
     return batches
