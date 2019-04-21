@@ -1,18 +1,6 @@
 import numpy as np
 
 
-def convert_digits(word):
-    simplified_word = ''
-
-    for i in range(len(word)):
-        if word[i].isdigit():
-            simplified_word += '0'
-        else:
-            simplified_word += word[i]
-
-    return simplified_word
-
-
 def read_sentences(path):
     sentences = []
     sentence = []
@@ -27,7 +15,7 @@ def read_sentences(path):
                 sentence = []
         else:
             word = line.split()
-            sentence.append([convert_digits(word[0]), word[3]])
+            sentence.append([word[0], word[3]])
 
     if len(sentence) > 0:
         if 'DOCSTART' not in sentence[0][0]:
