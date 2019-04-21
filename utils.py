@@ -2,11 +2,15 @@ import numpy as np
 
 
 def convert_digits(word):
+    simplified_word = ''
+
     for i in range(len(word)):
         if word[i].isdigit():
-            word[i] = '0'
+            simplified_word += '0'
+        else:
+            simplified_word += word[i]
 
-    return word
+    return simplified_word
 
 
 def read_sentences(path):
