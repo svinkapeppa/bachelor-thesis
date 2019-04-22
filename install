@@ -6,9 +6,11 @@
 STARTDIR=$PWD
 DATADIR="data"
 GLOVEDIR="glove"
+FEATURESDIR="features"
 
 mkdir $DATADIR
 mkdir $GLOVEDIR
+mkdir $FEATURESDIR
 
 #Download CoNLL datasets from Lample's Github
 cd $DATADIR
@@ -26,3 +28,21 @@ cd $STARTDIR
 cd $GLOVEDIR
 wget http://nlp.stanford.edu/data/glove.6B.zip
 unzip glove*.zip
+
+cd $STARTDIR
+
+#Download tool for downloading large files from Google Drive
+git clone https://github.com/circulosmeos/gdown.pl.git
+cp gdown.pl/gdown.pl $FEATURESDIR
+rm -rf gdown.pl
+
+#Download features and gazetteers from Wu's Google Drive
+cd $FEATURESDIR
+./gdown.pl https://drive.google.com/open?id=1VAsCFRwJlR-HqC2g23L0iuTbcDRyv66w all_onehot.train
+./gdown.pl https://drive.google.com/open?id=1J2NRSshE-OpCM03HzwLPNrRRAGOUdwTd all_onehot.testa
+./gdown.pl https://drive.google.com/open?id=1GkX86aZxy4XhbYRh-dbLEKvBxWI8zCib all_onehot.testb
+./gdown.pl https://drive.google.com/open?id=1VdX0-3JupF2gh8e8za3hfbAc8Inl9fm9 gazetteer_PERLOC.train
+./gdown.pl https://drive.google.com/open?id=1udfAcEdsePQoiuXuvn0VdvQZBMCcrYWn azetteer_PERLOC.testa
+./gdown.pl https://drive.google.com/open?id=1EaXS5deWHnQsBJ_kj0CMjVG8Ip3u76Oh gazetteer_PERLOC.testb
+
+rm gdown.pl
