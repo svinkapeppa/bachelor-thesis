@@ -1,0 +1,20 @@
+# PyCharm files
+.idea
+
+# Python files
+__pycache__
+
+# Jupyter files
+.ipynb_checkpoints
+
+# MacOS files
+.DS_Store
+
+# Dataset
+data
+
+# Embeddings
+glove
+
+# Features
+features
