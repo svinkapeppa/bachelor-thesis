@@ -42,7 +42,7 @@ cd $FEATURESDIR
 ./gdown.pl https://drive.google.com/open?id=1J2NRSshE-OpCM03HzwLPNrRRAGOUdwTd all_onehot.testa
 ./gdown.pl https://drive.google.com/open?id=1GkX86aZxy4XhbYRh-dbLEKvBxWI8zCib all_onehot.testb
 ./gdown.pl https://drive.google.com/open?id=1VdX0-3JupF2gh8e8za3hfbAc8Inl9fm9 gazetteer_PERLOC.train
-./gdown.pl https://drive.google.com/open?id=1udfAcEdsePQoiuXuvn0VdvQZBMCcrYWn azetteer_PERLOC.testa
+./gdown.pl https://drive.google.com/open?id=1udfAcEdsePQoiuXuvn0VdvQZBMCcrYWn gazetteer_PERLOC.testa
 ./gdown.pl https://drive.google.com/open?id=1EaXS5deWHnQsBJ_kj0CMjVG8Ip3u76Oh gazetteer_PERLOC.testb
 
 rm gdown.pl
