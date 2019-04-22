@@ -236,10 +236,23 @@ def create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx, featu
     for i, element in enumerate(batch):
         data['lengths'].append(len(element['sentence']))
 
+        gaze = gazetteers[element['start']: element['stop']]
+        feature = features[element['start']: element['stop']]
+
         if len(element['sentence']) < max_sentence_length:
+            gaze = np.vstack((gaze, np.zeros((max_sentence_length - len(element['sentence']), len(gazetteers[0])))))
+            feature = np.vstack((feature, np.zeros((max_sentence_length - len(element['sentence']), len(features[0])))))
             element['sentence'] += [['<PAD>', '<PAD>']] * (max_sentence_length - len(element['sentence']))
 
         batch[i]['sentence'] = [['<PAD>', '<PAD>']] + element['sentence'] + [['<PAD>', '<PAD>']]
+        gaze = np.vstack((np.zeros(len(gazetteers[0])), gaze, np.zeros(len(gazetteers[0]))))
+        feature = np.vstack((np.zeros(len(features[0])), feature, np.zeros(len(features[0]))))
+
+        data['gaze'].append(gaze)
+        data['features'].append(feature[:, 45:])
+        data['gazetteers'].append(np.argmax(gaze, 1))
+        data['shape'].append(np.argmax(feature[:, 45:196], 1))
+        data['position'].append(np.argmax(feature[:, 196:], 1))
 
     for element in batch:
         data_word = []
@@ -278,7 +291,12 @@ def create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx, featu
     data['char'] = np.asarray(data['char'])
     data['case'] = np.asarray(data['case'])
     data['lengths'] = np.asarray(data['lengths'])
+    data['gaze'] = np.asarray(data['gaze'])
+    data['features'] = np.asarray(data['features'])
     data['tag'] = np.asarray(np.expand_dims(data['tag'], -1))
+    data['gazetteers'] = np.asarray(np.expand_dims(data['gazetteers'], -1))
+    data['shape'] = np.asarray(np.expand_dims(data['shape'], -1))
+    data['position'] = np.asarray(np.expand_dims(data['position'], -1))
 
     return data
 
