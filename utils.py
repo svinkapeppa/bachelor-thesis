@@ -1,3 +1,4 @@
+import keras.backend as K
 import numpy as np
 
 
@@ -320,3 +321,14 @@ def create_batches(sentences, batch_size, max_word_length, word_idx, char_idx, t
         batches.append(data)
 
     return batches
+
+
+def weighted_sparse_categorical_crossentropy(target, output):
+    weights = [3, 0.5, 3]
+
+    output /= K.sum(output, axis=-1, keepdims=True)
+    output = K.clip(output, K.epsilon(), 1 - K.epsilon())
+
+    loss = target * K.log(output) * weights
+    loss = -K.sum(loss, -1)
+    return loss
