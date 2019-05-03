@@ -1,3 +1,4 @@
+import keras.backend as K
 import numpy as np
 
 
@@ -75,6 +76,19 @@ def convert_tags(sentences):
         tags = convert_iob2_to_iobes(tags)
         for line, tag in zip(sentence, tags):
             line[1] = tag
+
+
+def add_auxiliary_information(sentences):
+    count = 0
+
+    for i in range(len(sentences)):
+        length = len(sentences[i])
+        sentences[i] = {
+            'sentence': sentences[i],
+            'start': count,
+            'stop': count + length
+        }
+        count += length
 
 
 def create_tag_mapping(datasets):
@@ -204,24 +218,42 @@ def get_max_word_length(datasets):
     return max_word_length
 
 
-def create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx):
+def create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx, features, gazetteers):
     data = {
         'word': [],
         'char': [],
         'case': [],
         'lengths': [],
-        'tag': []
+        'tag': [],
+        'gaze': [],  # One-hot gaze tags
+        'gazetteers': [],  # True gaze tags
+        'features': [],  # One-hot features
+        'shape': [],  # True shape features
+        'position': []  # True position features
     }
 
-    max_sentence_length = len(batch[0])
+    max_sentence_length = len(batch[0]['sentence'])
 
     for i, element in enumerate(batch):
-        data['lengths'].append(len(element))
+        data['lengths'].append(len(element['sentence']))
 
-        if len(element) < max_sentence_length:
-            element += [['<PAD>', '<PAD>']] * (max_sentence_length - len(element))
+        gaze = gazetteers[element['start']: element['stop']]
+        feature = features[element['start']: element['stop']]
 
-        batch[i] = [['<PAD>', '<PAD>']] + element + [['<PAD>', '<PAD>']]
+        if len(element['sentence']) < max_sentence_length:
+            gaze = np.vstack((gaze, np.zeros((max_sentence_length - len(element['sentence']), len(gazetteers[0])))))
+            feature = np.vstack((feature, np.zeros((max_sentence_length - len(element['sentence']), len(features[0])))))
+            element['sentence'] += [['<PAD>', '<PAD>']] * (max_sentence_length - len(element['sentence']))
+
+        batch[i]['sentence'] = [['<PAD>', '<PAD>']] + element['sentence'] + [['<PAD>', '<PAD>']]
+        gaze = np.vstack((np.zeros(len(gazetteers[0])), gaze, np.zeros(len(gazetteers[0]))))
+        feature = np.vstack((np.zeros(len(features[0])), feature, np.zeros(len(features[0]))))
+
+        data['gaze'].append(gaze)
+        data['features'].append(feature[:, 45:])
+        data['gazetteers'].append(np.argmax(gaze, 1))
+        data['shape'].append(np.argmax(feature[:, 45:196], 1))
+        data['position'].append(np.argmax(feature[:, 196:], 1))
 
     for element in batch:
         data_word = []
@@ -229,7 +261,7 @@ def create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx):
         data_case = []
         data_tag = []
 
-        for word in element:
+        for word in element['sentence']:
             word_char = []
 
             if word_idx.get(word[0]) is not None:
@@ -260,27 +292,43 @@ def create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx):
     data['char'] = np.asarray(data['char'])
     data['case'] = np.asarray(data['case'])
     data['lengths'] = np.asarray(data['lengths'])
+    data['gaze'] = np.asarray(data['gaze'])
+    data['features'] = np.asarray(data['features'])
     data['tag'] = np.asarray(np.expand_dims(data['tag'], -1))
+    data['gazetteers'] = np.asarray(np.expand_dims(data['gazetteers'], -1))
+    data['shape'] = np.asarray(np.expand_dims(data['shape'], -1))
+    data['position'] = np.asarray(np.expand_dims(data['position'], -1))
 
     return data
 
 
-def create_batches(sentences, batch_size, max_word_length, word_idx, char_idx, tag_idx):
+def create_batches(sentences, batch_size, max_word_length, word_idx, char_idx, tag_idx, features, gazetteers):
     batches = []
     batch = []
 
-    sentences.sort(key=lambda x: -len(x))
+    sentences.sort(key=lambda x: -len(x['sentence']))
 
     for sentence in sentences:
         if len(batch) == batch_size:
-            data = create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx)
+            data = create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx, features, gazetteers)
             batches.append(data)
             batch = []
 
         batch.append(sentence)
 
     if len(batch):
-        data = create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx)
+        data = create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx, features, gazetteers)
         batches.append(data)
 
     return batches
+
+
+def weighted_sparse_categorical_crossentropy(target, output):
+    weights = [3, 0.5, 3]
+
+    output /= K.sum(output, axis=-1, keepdims=True)
+    output = K.clip(output, K.epsilon(), 1 - K.epsilon())
+
+    loss = target * K.log(output) * weights
+    loss = -K.sum(loss, -1)
+    return loss
