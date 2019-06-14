@@ -240,20 +240,44 @@ def create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx, featu
         gaze = gazetteers[element['start']: element['stop']]
         feature = features[element['start']: element['stop']]
 
+        shape = feature[:, 45:196]
+        position = feature[:, 196:]
+
+        gaze = np.hstack((gaze, np.zeros((1, len(gaze)))))
+        shape = np.hstack((shape, np.zeros((1, len(shape)))))
+        position = np.hstack((position, np.zeros((1, len(position)))))
+
         if len(element['sentence']) < max_sentence_length:
-            gaze = np.vstack((gaze, np.zeros((max_sentence_length - len(element['sentence']), len(gazetteers[0])))))
-            feature = np.vstack((feature, np.zeros((max_sentence_length - len(element['sentence']), len(features[0])))))
+            gaze = np.vstack((gaze, np.zeros((max_sentence_length - len(element['sentence']), len(gaze[0])))))
+            shape = np.vstack((shape, np.zeros((max_sentence_length - len(element['sentence']), len(shape[0])))))
+            position = np.vstack((position, np.zeros((max_sentence_length - len(element['sentence']), len(position[0])))))
+
+            for j in range(len(element['sentence']), max_sentence_length):
+                gaze[j][-1] = 1
+                shape[j][-1] = 1
+                position[j][-1] = 1
+
             element['sentence'] += [['<PAD>', '<PAD>']] * (max_sentence_length - len(element['sentence']))
 
         batch[i]['sentence'] = [['<PAD>', '<PAD>']] + element['sentence'] + [['<PAD>', '<PAD>']]
-        gaze = np.vstack((np.zeros(len(gazetteers[0])), gaze, np.zeros(len(gazetteers[0]))))
-        feature = np.vstack((np.zeros(len(features[0])), feature, np.zeros(len(features[0]))))
+        gaze = np.vstack((np.zeros(len(gaze[0])), gaze, np.zeros(len(gaze[0]))))
+        shape = np.vstack((np.zeros(len(shape[0])), shape, np.zeros(len(shape[0]))))
+        position = np.vstack((np.zeros(len(position[0])), position, np.zeros(len(position[0]))))
+
+        gaze[0][-1] = 1
+        gaze[-1][-1] = 1
+
+        shape[0][-1] = 1
+        shape[-1][-1] = 1
+
+        position[0][-1] = 1
+        position[-1][-1] = 1
 
         data['gaze'].append(gaze)
-        data['features'].append(feature[:, 45:])
+        data['features'].append(np.hstack((shape, position)))
         data['gazetteers'].append(np.argmax(gaze, 1))
-        data['shape'].append(np.argmax(feature[:, 45:196], 1))
-        data['position'].append(np.argmax(feature[:, 196:], 1))
+        data['shape'].append(np.argmax(shape))
+        data['position'].append(np.argmax(position))
 
     for element in batch:
         data_word = []
