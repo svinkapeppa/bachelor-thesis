@@ -243,9 +243,9 @@ def create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx, featu
         shape = feature[:, 45:196]
         position = feature[:, 196:]
 
-        gaze = np.hstack((gaze, np.zeros((1, len(gaze)))))
-        shape = np.hstack((shape, np.zeros((1, len(shape)))))
-        position = np.hstack((position, np.zeros((1, len(position)))))
+        gaze = np.hstack((gaze, np.zeros((len(gaze), 1))))
+        shape = np.hstack((shape, np.zeros((len(shape), 1))))
+        position = np.hstack((position, np.zeros((len(position), 1))))
 
         if len(element['sentence']) < max_sentence_length:
             gaze = np.vstack((gaze, np.zeros((max_sentence_length - len(element['sentence']), len(gaze[0])))))
