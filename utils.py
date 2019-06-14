@@ -275,9 +275,9 @@ def create_batch_data(batch, max_word_length, word_idx, char_idx, tag_idx, featu
 
         data['gaze'].append(gaze)
         data['features'].append(np.hstack((shape, position)))
-        data['gazetteers'].append(np.argmax(gaze, 1))
-        data['shape'].append(np.argmax(shape))
-        data['position'].append(np.argmax(position))
+        data['gazetteers'].append(np.argmax(gaze, axis=-1))
+        data['shape'].append(np.argmax(shape, axis=-1))
+        data['position'].append(np.argmax(position, axis=-1))
 
     for element in batch:
         data_word = []
