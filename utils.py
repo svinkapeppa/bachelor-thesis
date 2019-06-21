@@ -348,7 +348,7 @@ def create_batches(sentences, batch_size, max_word_length, word_idx, char_idx, t
 
 
 def weighted_sparse_categorical_crossentropy(target, output):
-    weights = [3, 0.5, 3, 1]
+    weights = [3, 0.5, 3, 0.5]
 
     output /= K.sum(output, axis=-1, keepdims=True)
     output = K.clip(output, K.epsilon(), 1 - K.epsilon())
